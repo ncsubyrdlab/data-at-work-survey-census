@@ -1,0 +1,536 @@
+---
+title: "Data at Work: Building Insights from Survey and Census Data"
+author: "Jeanne McClure and Christy Byrd"
+format: html
+editor: visual
+---
+
+# Introduction to the Data Example
+
+Our data example is from an online survey conducted with adolescents aged 13-17 from across the United States. The sample was randomly selected from a Qualtrics panel based on their likelihood of completing the survey. Parents received the survey, completed screening questions and provided consent. Adolescents answered the demographic questions and were allowed to continue if they met the demographic criteria.
+
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| Variable Name     | Question Text                                                        | Values                                    |
++===================+======================================================================+===========================================+
+| ID                |                                                                      |                                           |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| age               | How old are you?                                                     |                                           |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| gender            | What is your gender?                                                 | 0 girl                                    |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 1 boy                                     |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| race              | Of the choices below, which terms best describe your race/ethnicity? | 1 Asian/Asian American/Pacific Islander   |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 2 Biracial/Multiracial                    |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 3 Black/African American/African          |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 4 Hispanic/Latino/Latinx                  |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 5 Middle Eastern/Chaldean                 |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 6 Native American/American Indian         |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 7 White/European American/Caucasian       |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 8 Other                                   |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| grade             | What grade in school were you in this last year (2018-2019)?         | 1 = 12th .... 10 = 3rd                    |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| aspiration        | How far do you want to go in school?                                 | 1 Some high school                        |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 2 Finish high school                      |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 3 Some college                            |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 4 Finish community college (2-yr college) |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 5 Finish a 4-year college/university      |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 6 Get a graduate degree (master's, PhD)   |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| interest1         | How true are the following statements? - I find school interesting.  | 1 Not at all true                         |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 2 A little true                           |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 3 Somewhat true                           |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 4 Very true                               |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 5 Completely true                         |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| interest2         | How true are the following statements? - I like school.              | 1 Not at all true                         |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 2 A little true                           |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 3 Somewhat true                           |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 4 Very true                               |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 5 Completely true                         |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| interest3         | How true are the following statements? - I enjoy my classes.         | 1 Not at all true                         |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 2 A little true                           |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 3 Somewhat true                           |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 4 Very true                               |
+|                   |                                                                      |                                           |
+|                   |                                                                      | 5 Completely true                         |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| zip               | What is your home ZIP code? (parent reported)                        |                                           |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| median_income     | Household median income (dollars) (Census)                           |                                           |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+| percent_bachelors | \% bachelor's degree or higher (Census)                              |                                           |
++-------------------+----------------------------------------------------------------------+-------------------------------------------+
+
+Load the data using the code below.
+
+```{r}
+# Install packages if needed
+#install.packages("lavaan","tidyverse","moments")
+
+# Load packages
+library(tidyverse)
+library(lavaan)
+library(moments)
+
+# Load the example survey data
+data <- read_csv("https://raw.githubusercontent.com/ncsubyrdlab/data-at-work-survey-census/refs/heads/main/example.csv")
+
+# Preview the data
+glimpse(data)
+
+# Preview the data in RStudio
+#View(data)
+```
+
+# Wrangle and Explore
+
+First, we'll review the codebook to see how the variables are coded. Then we'll dig into the data to check for missing data, out of range values, and variables that need to be recoded or computed into scales.
+
+### Missing Data
+
+```{r}
+# Get the amount of missing data for each variable
+missing_data <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.))))
+missing_data
+
+# If necessary clean the data and handle missing values
+# Example: Replace median_income with the median of the sample using mutate
+#data <- data %>%
+#         mutate(median_income = replace(median_income,
+#                   is.na(median_income),
+#                   median(median_income, na.rm = TRUE)))
+
+# Example: Drop the rows with missing data in certain columns
+drop_na(data, interest1, interest2, interest3, zip, median_income, percent_bachelors)
+
+# Verify the data after dropping missing values
+glimpse(data)
+```
+
+### Levels of Measurement
+
+Variables can be classified into one of two categories:
+
+-   Categorical: Numbers represent discrete categories
+
+-   Continuous: Numbers represent actual values that can be added, subtracted, multiplied, etc.
+
+Ordinal variables are a special type of variable that is categorical but higher values represent "more" of something. Here, aspirations, grade, and interest1, 2, and 3 are ordinal variables. Depending on our research question, we can choose to treat them as categorical or continuous.
+
+### Exploring Categorical Variables
+
+The categorical variables in this dataset are gender, race, and ZIP code. We will also treat aspirations as categorical for the purposes of exploration.
+
+#### Creating Factors
+
+In order for R to treat our categorical variables as categorical, we'll tell R that they are "factors" and what each number represents.
+
+```{r}
+# Convert categorical variables to factor variables and label the categories
+data$gender <- factor(data$gender, 
+                      levels = c(0,1),
+                      labels = c("girl","boy"))
+
+data$race <- factor(data$race, 
+                    levels = c(1,2,3,4,5,6,7,8),
+                    labels = c("Asian/Asian American/Pacific Islander","Biracial/Multiracial","Black/African American/African","Hispanic/Latino/Latinx","Middle Eastern/Chaldean","Native American/American Indian","White/European American/Caucasian","Other"))
+
+data$aspiration <- factor(data$aspiration,
+                     levels = c(1,2,3,4,5,6),
+                     labels = c("Some high school","Finish high school","Some college","Finish community college (2-yr college)","Finish a 4-year college/university","Get a graduate degree (master's, PhD)"))
+```
+
+Note that the value for ZIP codes are represented as numbers so the variables does not need to be factored.
+
+#### Viewing Frequencies
+
+We'll view the frequencies for the categorical and ordinal variables to get a sense of their distributions and range. We also aren't interested in seeing the values for ZIP code since there are so many possible ones.
+
+```{r}
+# View the frequencies for categorical and some ordinal variables
+data %>% group_by(gender) %>% summarise(Frequency = n())
+data %>% group_by(race) %>% summarise(Frequency = n())
+data %>% group_by(aspiration) %>% summarise(Frequency = n())
+```
+
+#### Visualizing Categorical Data
+
+Now let's visualize the distributions of our data. Bar charts represent the frequency of each category in the data. We use them for categorical variables. A similar chart is called a histogram, which we use for continuous variables. If we filter the data, we'll only see valid values.
+
+```{r}
+# Bar charts for categorical and ordinal variables
+ggplot(data, aes(x = gender, fill = gender)) +
+  geom_bar(na.rm = TRUE) +
+  labs(title = "Bar Chart of Gender", x = "Gender", y = "Count")
+
+# Bar chart for gender with only valid values
+ggplot(data %>% filter(!is.na(gender)), aes(x = gender, fill = gender)) +
+  geom_bar(na.rm = TRUE) +
+  labs(title = "Bar Chart of Gender", x = "Gender", y = "Count")
+
+ggplot(data %>% filter(!is.na(race)), aes(x = race, fill = race)) +
+  geom_bar(na.rm = TRUE) +
+  labs(title = "Bar Chart of Race/Ethnicity", x = "Race/Ethnicity", y = "Count")
+
+ggplot(data %>% filter(!is.na(aspiration)), aes(x = aspiration, fill = aspiration)) +
+  geom_bar(na.rm = TRUE) +
+  labs(title = "Bar Chart of Aspirations", x = "Aspirations", y = "Count")
+```
+
+### Continuous Variables
+
+We'll be looking for the same features in our continuous variables. Some of our ordinal variables have a limited range, so it's useful to view the full frequency table even though we will treat them as continuous.
+
+```{r}
+data %>% group_by(age) %>% summarise(Frequency = n())
+data %>% group_by(grade) %>% summarise(Frequency = n())
+data %>% group_by(interest1) %>% summarise(Frequency = n())
+data %>% group_by(interest2) %>% summarise(Frequency = n())
+data %>% group_by(interest3) %>% summarise(Frequency = n())
+```
+
+#### Recoding Variables
+
+Notice that grade is coded 1-10, but we would prefer for the values to represent the actual grade levels, so let's recode it.
+
+```{r}
+# Recode grade
+data <- data %>%
+  mutate(grade_recode = case_when(
+    grade == 1 ~ 12,
+    grade == 2 ~ 11,
+    grade == 3 ~ 10,
+    grade == 4 ~ 9,
+    grade == 5 ~ 8,
+    grade == 6 ~ 7,
+    grade == 7 ~ 6,
+    grade == 8 ~ 5,
+    grade == 9 ~ 4,
+    grade == 10 ~ 3
+  ))
+
+# View the distribution
+data %>% group_by(grade_recode) %>% summarise(Frequency = n())
+
+# Compare it to the original distribution to make sure it's right
+data %>% group_by(grade) %>% summarise(Frequency = n())
+```
+
+#### Calculating Scale Scores
+
+The 3 interest variables are intended to form a scale score, so let's calculate that value.
+
+```{r}
+# Compute the scale score for interest
+data <- data %>%
+  mutate(interest_mean = rowMeans(select(., interest1, interest2, interest3), na.rm = TRUE))
+
+# View the distribution
+data %>% group_by(interest_mean) %>% summarise(Frequency = n())
+```
+
+#### Visualizing Continuous Data
+
+We can see the distribution of continuous variables using histograms, which are charts where the x-axis has been divided into equal-sized bins. The number of values in the bin determines the height of the bar. Bar charts are similar except that each bar represents a discrete value.
+
+```{r}
+# Histograms for continuous variables
+ggplot(data, aes(x = interest_mean)) +
+  geom_histogram(na.rm = TRUE) +
+  labs(title = "Histogram of Interest Scale Score", x = "Interest", y = "Frequency")
+
+ggplot(data, aes(x = median_income)) +
+  geom_histogram(na.rm = TRUE) +
+  labs(title = "Histogram of Median Income", x = "Income", y = "Frequency")
+
+ggplot(data, aes(x = percent_bachelors)) +
+  geom_histogram(na.rm = TRUE) +
+  labs(title = "Histogram of Education", x = "% Bachelors or Higher", y = "Frequency")
+
+# Age and grade look better as a bar chart than a histogram
+ggplot(data, aes(x = age)) +
+  geom_histogram(na.rm = TRUE) +
+  labs(title = "Histogram of Age", x = "Age", y = "Frequency")
+
+ggplot(data, aes(x = age, fill = factor(age))) +
+  geom_bar(na.rm = TRUE) +
+  labs(title = "Bar Chart of Age", x = "Age", y = "Frequency")
+
+ggplot(data, aes(x = grade_recode)) +
+  geom_histogram(na.rm = TRUE) +
+  labs(title = "Histogram of Grade", x = "Grade", y = "Count")  
+
+ggplot(data, aes(x = factor(grade_recode))) +
+  geom_bar(na.rm = TRUE) +
+  labs(title = "Bar Chart of Grade", x = "Grade", y = "Count")  
+```
+
+Finally, we'll get some descriptive statistics for the continuous variables. Here are some things to look for:
+
+-   Mean: center of the distribution
+
+-   Standard deviation: average distance from the mean (spread)
+
+-   Skewness: how asymmetrical the distribution is
+
+    -   0 = no skew
+
+    -   Positive = tail on the right
+
+    -   Negative = tail on the left
+
+-   Kurtosis: how pointy a distribution is
+
+    -   3= normal kurtosis
+
+    -   Lower values = flatter
+
+    -   Higher values = skinnier
+
+```{r}
+# Calculate the descriptive statistics for continuous variables
+summary_stats <- data %>%
+  summarize(
+    mean_age = mean(age, na.rm = TRUE),
+    mean_interest = mean(interest_mean, na.rm = TRUE),
+    mean_income = mean(median_income, na.rm = TRUE),
+    mean_bachelors = mean(percent_bachelors, na.rm = TRUE),
+    
+    sd_age = sd(age, na.rm = TRUE),
+    sd_interest = sd(interest_mean, na.rm = TRUE),
+    sd_income = sd(median_income, na.rm = TRUE),
+    sd_bachelors = sd(percent_bachelors, na.rm = TRUE),
+    
+    skew_age = skewness(age, na.rm = TRUE),
+    skew_interest = skewness(interest_mean, na.rm = TRUE),
+    skew_income = skewness(median_income, na.rm = TRUE),
+    skew_bachelors = skewness(percent_bachelors, na.rm = TRUE),
+    
+    kurt_age = kurtosis(age, na.rm = TRUE),
+    kurt_interest = kurtosis(interest_mean, na.rm = TRUE),
+    kurt_income = kurtosis(median_income, na.rm = TRUE),
+    kurt_bachelors = kurtosis(percent_bachelors, na.rm = TRUE)
+  ) 
+
+# Reshape the data into a nice table
+summary_stats_long <- summary_stats %>%
+  pivot_longer(cols = everything(), 
+               names_to = c("statistic", "variable"), 
+               names_sep = "_") %>%
+  pivot_wider(names_from = statistic, values_from = value)
+
+# View the formatted table
+summary_stats_long
+```
+
+Note that it might not make sense to get a mean grade. Instead, we'd probably want to talk about the frequency in each category. However, we might want to get a mean level of aspirations, our other ordinal variable, depending on what we're looking for.
+
+### Visualizing and Testing Relationships in the Data
+
+Now that we've explored distributions, we will visualize relationships between variables. This helps us see how variables are connected and can reveal trends or patterns in the data. Here is where we'll need to be guided by some research questions, such as:
+
+-   How is the percent of bachelors degrees in a neighborhood related to median income?
+
+-   Does interest in school decrease with age?
+
+-   Are girls and boys evenly distributed across ethnic-racial groups?
+
+-   Are girls more interested in school than boys?
+
+-   Are there significant differences in interest in school by race?
+
+#### Continuous x Continuous Relationships
+
+-   How is the percent of bachelors degrees in a neighborhood related to median income?
+
+-   Does interest in school decrease with age?
+
+The first two questions involve two continuous variables. We'll visualize them with scatterplots. Each point on the scatterplot represents a pair of values from two variables. From a scatterplot you can tell the strength and direction of the relationship.
+
+```{r}
+# Scatterplot of % bachelors and median income
+ggplot(data, aes(x = median_income, y = percent_bachelors)) +
+  geom_point(na.rm = TRUE) +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Scatterplot of Median Income vs Education", x = "Median Income", y = "Percent Bachelor's Degree or Higher")
+
+# Scatterplot of age vs interest scale score
+ggplot(data, aes(x = age, y = interest_mean)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, color = "blue") +
+  labs(title = "Scatterplot of Age vs Interest", 
+       x = "Age", 
+       y = "Interest Scale Score")
+```
+
+The blue lines represent fit lines that quantify the degree to which two continuous variables are related. This is called a correlation. A positive correlation means that higher values in X are associated with higher values in Y, while a negative correlation means that higher values in X are associated with lower values in Y (and vice versa).
+
+Pearson's correlation coefficient (r) ranges from -1 to +1, where -1 indicates a perfect negative correlation, 0 indicates no correlation, and +1 indicates a perfect positive correlation. The p-value tells us whether the relationship is statistically significant.
+
+**Example:** Does interest decrease with age?
+
+```{r}
+# Correlation between education and income
+cor.test(data$percent_bachelors, data$median_income)
+
+# Correlation between age and interest
+cor.test(data$age, data$interest_mean)
+```
+
+#### Categorical x Categorical Relationships
+
+-   Are girls and boys evenly distributed across ethnic-racial groups?
+
+Clustered bar charts allow us to compare the distribution of one categorical variable across different groups of another categorical variable. For instance, we can compare the distribution of girs and boys across grades. Note that we have to convert grade to a factor variable in this chart.
+
+```{r}
+# Clustered bar chart of grade by gender
+ggplot(data %>% filter(!is.na(gender)), aes(x = gender, fill = race)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Clustered Bar Chart of Gender x Race", x = "Gender", y = "Count", fill = "Race")
+```
+
+We can test whether the categories are statistically unbalanced with a chi-square test. It compares the observed frequencies in each category to the expected frequencies if no association existed. The test calculates the chi-square statistic.
+
+```{r}
+# Table to show distribution by race and gender
+raceXgender <- table(data$race, data$gender)
+raceXgender
+
+# Chi-Square test for association between race and gender
+chisq.test(raceXgender)
+```
+
+#### Categorical x Continuous Relationships
+
+-   Are girls more interested in school than boys?
+
+-   Are there significant differences in interest in school by race?
+
+Our last two questions involve a categorical variable with a continuous variables. We visualize these relationships with boxplots, which provide a summary of the distribution of a continuous variable by showing its median, quartiles, and potential outliers.
+
+```{r}
+# Boxplot of interest scale score by gender
+ggplot(data %>% filter(!is.na(interest_mean)), aes(x = gender, y = interest_mean)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Interest Scale Score by Gender", x = "Gender", y = "Interest Scale Score")
+
+# Boxplot of interest scale score by race
+ggplot(data %>% filter(!is.na(interest_mean
+                              )), aes(x = race, y = interest_mean)) +
+  geom_boxplot() +
+  labs(title = "Boxplot of Interest Scale Score by Race", x = "Race/Ethnicity", y = "Interest Scale Score")
+```
+
+We can test whether the means of the groups are significantly different from each other with t-tests and ANOVAs. Both are based on the same underlying model, but a t-test compares two groups while an ANOVA compares more than two groups.
+
+A t-test can be either independent (two different groups) or paired (the same group measured twice).
+
+```{r}
+# Summarize the mean of interest by gender
+data %>%
+  group_by(gender) %>%
+  summarise(
+    m_interest = mean(interest_mean, na.rm = TRUE),
+    sd_interest = sd(interest_mean, na.rm = TRUE),
+    count = n()
+  )
+
+# T-test comparing interest between boys and girls
+t.test(interest_mean ~ gender, data = data, alternative = "two.sided")
+```
+
+ANOVA tests whether there are any significant differences between the means of three or more groups. We need a post-hoc test to determine which groups are significantly different from each other.
+
+```{r}
+# Summarize mean of interest by race
+data %>%
+  group_by(race) %>%
+  summarise(
+    m_interest = mean(interest_mean, na.rm = TRUE),
+    sd_interest = sd(interest_mean, na.rm = TRUE),
+    count = n()
+  )
+
+# One-way ANOVA for interest across race
+oneway.test(data$interest_mean ~ data$race,
+  var.equal = TRUE # assuming equal variances
+)
+
+# Post-hoc test to determine which groups are different (if the p-value is significant)
+#pairwise.t.test(data$interest_mean, data$race, p.adjust.method = "bonferroni")
+```
+
+### Regression
+
+Regression is a more advanced form of correlation that models the relationship between a dependent variable and one or more independent variables. It estimates the coefficients that represent the relationship between predictors and the outcome.
+
+**Example:** Is interest associated with gender when controlling for age?
+
+```{r}
+# Simple linear regression predicting interest based on age
+lm_model <- lm(interest_mean ~ age + gender, data = data)
+summary(lm_model)
+```
+
+Note that because gender has two categories that are coded 0 and 1, we can enter it into the regression even if it's not a factor variable. If we were using race, we would have to treat it as a factor variable or create dummy variables. We would also create dummy variables if we wanted to change the reference group.
+
+### Factor Analysis
+
+Factor analysis is used to identify underlying relationships between variables. It reduces data dimensionality by grouping variables that correlate highly with each other into factors.
+
+**Example:** Checking whether interest1, interest2, and interest3 form one factor
+
+```{r}
+# Exploratory factor analysis
+library(psych)
+fa_data <- data[, c("interest1", "interest2", "interest3")]
+fa_result <- fa(fa_data, nfactors = 2, rotate = "varimax")
+print(fa_result)
+
+# Confirmatory factor analysis  
+model <- 'INT =~ interest1 + interest2 + interest3'
+fit <-sem(model, data=data, meanstructure=TRUE)
+summary(fit, rsquare=TRUE)
+```
+
+# Thinking About Bias
+
+Data can be biased in a number of ways. Here are some questions to think about when understanding how you can reduce and minimize bias in your data analysis and dissemination.
+
+-   Who is represented in this data?
+
+-   Who is overrepresented or underrepresented?
+
+-   How was the data collected?
+
+-   Why is data missing?
+
+-   How will my conclusions affect the populations I'm studying?
